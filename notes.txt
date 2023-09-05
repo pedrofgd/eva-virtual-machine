@@ -1,0 +1,340 @@
+Building a Virtual Macine for Programming Language
+
+Course by Dmitry Soshnikov
+
+Some context on interpretation is a prerequisite:
+- Closures
+- Scope chain
+- Identifier resolution
+- Environment
+
+Notes from the previous course "Building an Interpreter from scratch":
+https://github.com/pedrofgd/interpreters
+
+# Section 1: VM basic operations
+
+Lecture 1: Introduction to Virtual Machines
+
+Recap:
+- Compilers don't execute anything, they just translate from one
+    language to another (hoping that there is an interpreter for the
+    target language - that in the lowest level, is the CPU itself)
+- To get the output of some program, "WE ALWAYS NEED AN INTERPRETER"
+    - If there is no interpreter for the language, we need a compiler 
+        that translate the code for another language that have one
+
+- AST interpreter
+    - "Defines the high-level semantics"
+    - Pipeline
+    --------- Static time (compile time) (before code execution)
+    Program `print "hello"` ->
+    Tokenizer (lexical analysis) ->
+    Tokens `[ID: "print"] [STRING: "hello"]` ->
+    Parser (syntatic analysis) ->
+    AST (Abstract Syntax Tree) (intermediate representation) ->
+    --------- Runtime (actual code execution)
+    Interpreter (runtime semantics) ->
+    Result "hello"
+    
+
+
+Bytecode interpreter: aks virtual machine
+Couple of more extra steps during the compilation and fundamentally
+changes the runtime data sctructures
+
+--------- Static time (compile time) (before code execution)
+Program `print "hello"` ->
+Tokenizer (lexical analysis) ->
+Tokens ->
+Parser (syntatic analysis) ->
+AST (Abstract Syntax Tree) ->
+-- Extra step:
+Bytecode Emitter (a compiler) ->
+Bytecode
+    ```
+    // example:
+    push "hello"
+    call print
+    ``` ->
+--
+Interpreter ->
+Result "hello"
+
+Why bytecode instead of AST:
+* AST takes more space and can be slower in the evaluation loop
+* bytecode is just array of bytes, which is much faster to interpret and
+    takes less space
+
+
+Example:
+```
+// Source code
+(begin
+    (var x 15)
+    (- (+ x 10) 5))
+
+// AST
+// Too much memory
+// Everything is at runtime
+// Slow eval
+["begin",
+    ["var", "x", 15],
+    ["-", ["x", x, 10], 5]]
+
+// Bytecode
+// Lower memory
+// Pre-compile as much as possible
+// Fast eval
+01 00 0A 03 09 03 01 01
+02 01 02 03 00
+```
+
+* "Instead of evaluating if variable x is in the environment chain,
+we know exactly in which environment it exists and know exactly the index
+in that environment, so the evaluation becomes much faster"
+
+* Compilation optimizations before we hit the runtime
+
+** This representation becomes much harder to read from humans, so:
+// Disassembly
+0000   01 00   CONST        0 (15)
+0002   0A 00   SET_GLOBAL   0 (x)
+0004   09 00   GET_GLOBAL   0 (x)
+0006   01 01   CONST        1 (10)
+0008   02      ADD
+0009   01 02   CONST        2 (5)
+000B   03      SUB
+000C   00      HALT
+
+
+[Memory adress where bytecode is located]
+[bytecode itself]
+[textual representation, known as the assembly]
+[??? don't know what are the last 2]
+
+**** "In this class WE USE CUSTOM BYTECODE, that we invented"
+        it will looks very similar to the python bytecode
+
+
+
+We will implement the language "Eva" again,
+same as the previous course
+
+
+** We will be using just header files with direct implementations
+    *** not the best thing to do in C++ (usually split declaration in
+        the header and implementation in .cpp), but, again, this course
+        is not about cpp
+
+Note about cpp:
+```c++
+// EvaVM.h
+#ifndef __EvaVM_h
+#define __EvaVM_h
+
+#endif
+```
+- this "preprocessor directives" ensure that the contents of "EvaVM.h"
+    header file are only included once in a source file. If the header
+    is included multiple times in the samne source file or in different
+    source files, this technique helps prevent duplication and potential
+    compilation errors
+- `#ifndef` stands for the obvious "if not defined", that checks if a
+    macro with the name `__EvaVM_h` has not been defined before in the
+    code. If it has not, it will execute the code withing the following
+    `#endif` block
+- `#define` defines a macro named `__EvaVM_h`. When this line is
+    encountered, it effectively "marks" the macro as defined
+
+- ...the whole point is just make sure the header is included only once
+
+
+
+
+ip = instruction pointer = (aka) pc = program counter
+** called ip, for example, in the Intel architecture
+
+in contrast with the AST interpreter, the eval function,
+heart of any interpreter, is NOT recursive here: it is an infinite loop
+
+the set of the bytecode instructions is knonw as the instructions set
+
+
+
+Note about cpp:
+```bash
+// Check installed version
+clang++ -v
+
+// Compile enabeling warnings and debugging support
+clang++ -std=c++17 -Wall -ggdb3 ./eva-vm.cpp -out ./eva-vm
+```
+
+
+
+Lecture 2: Stack-based vs. Register-based VMs
+
+Virtual machines:
+- Stack-based machines
+    - Stack for operands and operators
+    - Result is always on top of the stack
+- Register-based machines
+    - Set of virtual registers
+        - In physic machines is located directly in the CPU,
+            in VMs is just storage for variables
+    - Result is in "accumulator" register (example `eax` in Intel arch)
+    - Mapped to real via register allocation
+
+** Details also in notes from previous course (always good to revisit)
+
+
+Stack-based machines
+
+```
+// Source code
+x = 15;
+x + 10 - 5;
+```
+
+```
+// Bytecode
+push $15
+set %0
+push %0
+push $10
+add
+push $5
+sub
+```
+
+There are 2 "control structures": the stack itself and a Var storage
+Step by step:
+
+- push $15
+push `15` to the top of the stack
+
+- set %0
+set index 0 of the Var storage as the value in the top of the stack
+```
+// Var storage
+%0 = 15
+```
+
+- push %0
+push the value at index %0 in the Var storage to the top of the stack
+
+- push $10
+push `10` to the top of the stack
+
+- add
+gets the 2 items in the stack and add them; puts the result in the top
+
+- push $5
+`5` to the top
+
+- sub
+same as add, but subtract
+
+* result should be on the top of the stack (the value `sub` pushed)
+
+
+during the execution of bytecode, there is the ip (instruction pointer)
+and stack pointer, that move accordingly to the next instruction and
+points to the top of the stack
+
+
+"many VMs have the concept of Constant pool"
+- array of constants
+- example in this bytecode example (constants used here)
+    ```
+    // Constant pull
+    %0 = 15
+    %1 = 10
+    %2 = 5
+    ```
+- Some VMs may prefer using the constants directly
+- For simple numbers may not have any difference, however may have
+    for strings (that are objects already allocated on the heap and we
+    may want to reuse the same constant string by just using the index,
+    instead of enconding the string directly in the bytecode)
+
+```
+// Eva bytecode
+CONST 0            // Use the index 0 from Constant pull
+SET_GLOBAL 0       // Set index 0 from Var storage with the value in top
+GET_GLOBAL 0       // Push index 0 from Var storage to top
+CONST 1            // Use index 1 from Constant pull (push top of stack)
+ADD
+CONST 2            // Same... index 2 to top of the stack
+SUB
+HALT               // END of execution
+```
+
+**** Eva VM will be stack-based
+
+Notable examples of stack-based are: Java, Python, Javascript ...
+
+** Compiler explorer tool: godblot.org, for exploring the bytecode
+generated for stack machine in another languages
+
+
+
+Register-based machines
+
+```
+/* Registers */
+
+// General purpouse
+r1 = 0
+r2 = 0
+r3 = 0
+r4 = 0
+
+// Special registers
+ip = 0                /* Instruction pointer */
+sp = 0                /* Stack pointer */
+bp = 0                /* Base pointer */
+```
+
+In most of the cases, VMs and real machines are of MIXED type
+(a register-machine which also has a stack), like Intel arch
+
+Stack pointer and base pointer may be needed to
+implement recursive calls
+
+
+```
+// Bytecode
+mov r1, $15,
+add r1, $10
+sub r1, $5
+```
+
+Bytecode instructions are executed while the instruction pointer
+is updated (increased)
+
+Finally, after execution, the result is in register r1
+
+Notable examlpes: Lua virtual machine, the Perl VM ...
+
+
+
+Lecture 3: Logger implementation
+
+Just adding simple logs and error handling
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
