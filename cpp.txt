@@ -1,0 +1,93 @@
+notes.txt is about course content (interpreters, vm...)
+
+this is more about cpp specific things: features, types, syntax..
+
+
+Lecture 3: Logger implementation
+
+std::cerr -> "character error (stream)"
+general note: is used for writing error message and diagnostic
+information to the error stream
+
+is provided by the C++ Standard Library (std)
+
+this seems to be "unbuffered" and the output "is not delayed and is
+immediately displayed" (so it would print even if the program crashses
+or terminates unexpectedly)
+
+may take a look in more details about:
+- std::cout
+- std:flush
+- and the std::cerr itself
+and this "buffered" thing (looks like the content to be displayed is
+    stored in memory before goes actually to the console for some
+    performance related reason...)
+
+
+C++ macros, like:
+`#define log(value) std::cout << #value << " = " << (value) << "\n"`
+(from src/Logger.h)
+
+this seems to be a way to define a text substitution at compile time
+
+- #define is the "preprocessor directive used to define a macro"
+- log(value) is the name of the macro
+- #value gets the name of the variable was "passed"
+  (value) gets the value of that variable
+
+  ** just note: text substitution in compile time
+
+Also there is a problem with this thing, that I can't display the
+hex `opcode` in terminal (at least iTerm2), don't know exactly why
+
+
+Same for:
+`#define DIE ErrorLogMessage()`, that is text substitution
+
+```c++
+DIE; // Expands to ErrorLogMessage();
+```
+
+"A macro is a piece of code in a program that is replaced by the
+value of the macro. [...] Whenever a macro name is encountered by the
+compiler, it replaces the name with the definition of the macro"
+
+"A macro is defined by the #define directive"
+
+Ref: https://www.geeksforgeeks.org/macros-and-its-types-in-c-cpp/
+
+
+
+
+Lecture 4: Numbers | Introduction to Stack
+
+uint8_t -> unsigned interger type with width of exactly 8 bits
+    - 0 to 255 (unsigned can't represent negative values)
+
+std::array -> <class T, std::size_t N>
+    * size_t can store the maximum size of a theoretically possible
+        object of any type (including array)
+
+std::vector -> "is a sequence that encapsulates dynamic size arrays"
+
+
+About pointers:
+```c++
+uint8_t* ip;
+std::vector<uint8_t> code;
+ip = &code[0] // Gets the MEMORY ADDRESS of the first element of code
+```
+
+printing out ip:
+```c++
+std::cout << "ip = " << static_cast<void*>(ip) << std::endl;
+
+// Result: ip = 0x5054f8
+```
+
+now about `static_cast<void*>`...
+- `void*` is known as "pointer to void" or "generic pointer"
+- can hold the ADDRESS of any data type (type-neutral)
+- when std::cout, explicitly cast `ip` to a `void*`, which tells the
+    compiler that the value being printed is a pointer without any
+    specific type
