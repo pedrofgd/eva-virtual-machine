@@ -325,12 +325,85 @@ Just adding simple logs and error handling
 
 
 
+Lecture 4: Numbers | Introduction to Stack
+
+1. new operation code OP_CONST 0x01 (push a constant onto the stack)
+
+** we don't use the actual number to push on the stack, like:
+    `OP_CONST 42`, instead, we use the index of the number in the 
+    "constant pool": `OP_CONST 0`, `%0 = 42`
+
+2. EvaValue.h
+    - Enum EvaValueType for the types of values we will use
+    - struct EvaValue as tagged union (in addition to the value itself,
+        we are going to store its type)
+        ```c++
+        EvaValueType type;
+        union {
+            double number;
+        }
+        ```
+        - "virtual machines usually represent values as typed-values"
+        - [ ] Take a look on `union`, but it seems that, when define
+            another values, like `bool boolean`, i "assign" on of them
+            and it ocupates the same size, diff from like a struct,
+            that have multiple fields
+
+    - Constructor macro for NUMBER: EvaValueType will be number and
+        the field number is set to the passed value
+
+3. Declare the constant pool property (the size of it will be an 
+    EvaValue) and it will be dynamic (vector, not array)
+    - [ ] take a better look on vector (confirm is a heap thing)
+
+4. Initialize the constant pool (manually by now, with a single value)
+    - constants.push_back(...);
+    - note that constants is a vector of type EvaValue
+
+5. Handle the Operation Code for CONST in the evaluation `void eval()`
+    - get the value from the constant pool and push to the stack
+    - note that the index of the value in the constant pool will be
+        the next instruction in the code (we can use READ_BYTE macro)
+    - may create a macro for GET_CONST(index)
+        - racap: this macro is a text substitution in compile time
+        ```c++
+        #define GET_CONST() constants[READ_BYTE()]
+        ```
+
+6. Declare the stack and the stack pointer
+    - The stack has a fixed size (use an array, instead of vector)
+    - Create a macro for the STACK_LIMIT with 512 values
+    - The type of the stack is EvaValues
+        - note that we are doing `constants.push_back(NUMBER(42))`,
+        so constant pool will contain EvaValues (that's its type)
+    - Create the stack pointer: `EvaValue* sp`
 
 
+7. Create push operation, to push a value in the top of the stack
+    - Needs to check if its possible to push on the stack (if its\
+        full, that's a Stack Overflow error)
 
+8. Create pop operator, to remove the top element of the stack
+    - Decrease the stack pointer and return the new value
+    - Also check for an empty stack and return an error for this case
+        `DIE << "pop(): empty stack.\n";
+        check empty stack with `sp == stack.begin()`
 
+        *** this will work, but `stack.size() == 0` will not,
+        because we have a pre-allocated array, so the size will
+        never be 0.
 
+9. Return EvaValue from eval and exec functions
 
+10. Update the check for OP_HALT (end of bytecode instructions),
+    to pop() the stack and return
+    ```c++
+    // Return the value on top of stack (since is stack-base VM,
+    // the result is always let on top) and clean it
+    return pop();
+    ```
+11. Create accessor macro AS_NUMBER to return the EvaValue as
+    C++ implementation `(double)(evaValue).number)`
 
 
 
