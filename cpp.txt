@@ -324,3 +324,135 @@ About macros with multiple lines (like the BINARY_OP we created here):
       */
     ```
 
+
+Lecture 6: Strings | Introduction to Heap and Objects
+
+About the new types we created in EvaValue.h
+
+```
+// EvaValue.h
+
+...
+
+enum class ObjectType {
+    STRING,
+}
+
+struct Object {
+    // Constructor
+    Object(ObjectType type) : type(type) {}
+    ObjectType type;
+};
+
+struct StringObject : public Object {
+    StringObject(const std::string &str) 
+        : Object(ObjectType::STRING), string(str) {}
+    std::string string;
+}
+
+...
+```
+
+- StringObject enherits from Object and its constructor:
+    - receives a "read only" reference to a string as a paremeter
+      `StringObject(const std::string &str)`
+
+    - `: Object(ObjectType::STRING)` is the "member initializer list"
+      it initializes the base class `Object` using its constructor:
+
+      `Object(ObjectType type) : type(type) {}`
+          - this set `type` of the base class as the received paremeter
+            `type`, that in this case is the ObjectType::STRING
+
+    - `string(str)` is another part of the "member initializer list"
+      that initializes the `string` member with the value of the `str`
+      parameter passed to the constructor.
+      
+      It effectively assigns the `str` paremeter to the `string` member
+
+*** Note: we are using `.object = StringObject(value)` in the constructor
+macro (also `.number = value` in the NUMBER conscturctor):
+    - this is a designated initialization in C++, that we SPECIFY
+        WHICH MEMBER OF A UNION or a struct we are initializing
+
+
+About the new accessors:
+```
+#define AS_STRING(evaValue) ((StringObject*)(evaValue)->object)
+#define AS_CPPSTRING(evaValue) (AS_STRING(evaValue)->string)
+```
+
+- [x] Revisit why the why (evaValue)->object is necessary
+    (i didn't fully got why evaValue is exptected as a pointer,
+        since using -> instead of .)
+    ********** that was a typo in the video.
+        The correct is actually the expected (evaValue).object,
+        since evaValue is not a pointer
+- AS_STRING cast to StringObject* (pointer to StringObject) because
+    the object field has type Object* (not directly StringObject)
+- Then we use AS_CPPSTRING to get the value of the string, that is a
+    field of StringObject. Here we use the -> because AS_STRING(evaValue)
+    returns a pointer to StringObject (that part seems OK to me)
+
+
+*** Just to note that macros may not be a good practice
+- [ ] take a look on it, use cases and opinions
+
+
+**** NOTE: note related to that specific lecture, but important
+More notes about memory allocation of some of the strucutres we already
+have:
+
+Our `stack` and `constants` are allocated on the heap and managed by the
+standard library "container" (- [ ] not sure yet how that works), since
+we are using `std::array` and `std::vector`.
+
+This implementations are allocated on the heap regardless how we
+create a new instance of EvaVM class.
+
+The other properties we have, such as the instruction pointer `ip` and
+the stack pointer `sp`, that are uint8_t* and EvaValue*, are allocated
+on the stack, since we create the EvaVM instance on the stack
+```c++
+// eva-vm.cpp
+int main() {
+    EvaVM vm;
+}
+```
+
+Also important to say that `ip` and `sp` does not point to anything
+until we initialized them.
+On creating the class instance, they are allocated, but only point after:
+```c++
+ip = &code[0]; // ip is the ADDRESS (`&`) of code array at index 0
+sp = &stack[0]; // sp is the ADDRESS of stack array at index 0
+```
+
+Also, by creating EvaVM instance like that, at the end of the scope
+(main function scope), the EvaVM destructor will be called and deallocate
+this out
+    - destructors of the class's member vairbles are also invoked,
+        which includes std::array and std::vector, that are responsible
+        for realising the memory they allocated
+
+The behavior would be different if i've instantiaded EvaVM with new
+keyword, which would means that the class is allocated on the heap and
+I wold need to call delete keyword to release memory
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

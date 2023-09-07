@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <string>
 
 #include "../Logger.h"
 #include "../bytecode/OpCode.h"
@@ -81,12 +82,10 @@ class EvaVM {
          // 2. Compile program to Eva bytecode
          // code = compiler->compile(ast)
          
-         constants.push_back(NUMBER(10));
-         constants.push_back(NUMBER(3));
-         constants.push_back(NUMBER(10));
-         constants.push_back(NUMBER(2));
+         constants.push_back(ALLOC_STRING("Hello, "));
+         constants.push_back(ALLOC_STRING("world!"));
 
-         code = {OP_CONST, 0, OP_CONST, 1, OP_MUL, OP_CONST, 2, OP_SUB, OP_CONST, 3, OP_DIV, OP_HALT};
+         code = {OP_CONST, 0, OP_CONST, 1, OP_ADD, OP_HALT};
 
          // Set instruction pointer to the beginning:
          ip = &code[0];
@@ -118,7 +117,22 @@ class EvaVM {
                  // Math ops:
 
                  case OP_ADD: {
-                     BINARY_OP(+);
+                     auto op2 = pop();
+                     auto op1 = pop();
+
+                     // Numeric addition:
+                     if (IS_NUMBER(op1) && IS_NUMBER(op2)) {
+                         auto v1 = AS_NUMBER(op1);
+                         auto v2 = AS_NUMBER(op2);
+                         push(NUMBER(v1 + v2));
+                     }
+
+                     // String concatenation:
+                     else if (IS_STRING(op1) && IS_STRING(op2)) {
+                         auto s1 = AS_CPPSTRING(op1);
+                         auto s2 = AS_CPPSTRING(op2);
+                         push(ALLOC_STRING(s1 + s2));
+                     }
                      break;
                  }
 

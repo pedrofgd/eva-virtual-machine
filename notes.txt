@@ -506,6 +506,144 @@ just press `r` to start running and
 
 
 
+Lecutre 6: Strings | Introduction to Heap and Objects
+
+This is about implementing string type, our first object type.
+
+"in constrast with the symbol number, we can't encode the string
+directly inside the EvaValue (inside the union)"
+- The strings will be allocated on the heap and inside the EvaValue,
+    we will be storing the reference (the pointer) to the heap allocated
+    string
+
+1. Introduce "generic object pointer type" and OBJECT EvaValueType
+    - EvaValueType now may be either NUMBER or OBJECT type
+    - Now EvaValue must have the Object object reference inside the
+        union declaration
+        ```c++
+        struct EvaValue {
+            EvaValueType type;
+            union {
+                double number;
+                Object* object;
+            };
+        };
+        ```
+    - Create the ObjectType enum (we may have multiple types of objects,
+        the first one will be STRING)
+    - Create the Object struct (that `Object*` is OUR custom type)
+        ```c++
+        // Base object.
+        struct Object {
+            // Constructor
+            Object(ObjectType type) : type(type) {}
+            ObjectType type;
+        };
+    - Create the StringObject (inherit from the Object) 
+        ```c++
+        struct StringObject : public Object {
+            StringObject(const std::string &str) 
+                : Object(ObjectType::STRING), string(str) {}
+            std::string string;
+        }
+        ```
+    - Create the ALLOC_STRING constructor macro
+        - Note: we use the "ALLOC" prefix to anything that allocates
+            objects on the heap, so we understand that potentially we
+            need to garbage collect (later topic on the course)
+        ```c++
+        #define ALLOC_STRING(value) \
+            ((EvaValue){EvaValueType::OBJECT, \
+                .object = (Object*)new StringObject(value)})
+
+    - Create the AS_STRING accessor:
+        ```c++
+        #define AS_STRING(evaValue) ((StringObject*)(evaValue).object)
+        ```
+    - Also the AS_CPPSTRING accessor, for convenience:
+        ```c++
+        #define AS_CPPSTRING(evaValue) (AS_STRING(evaValue)->string)
+        ```
+
+2. Modify the EvaVM.h exec method to test the STRING constant type
+    *** Now a note about a why we are using the constant pool:
+    constants.push_back(ALLOC_STRING("Hello")) allocates the string
+    only once, and we can use the same index at the pool to access this
+    value multiple times (if the same value is refered multiple times),
+    that saves a lot of spaces
+
+    - Push a string to the constant pool
+        `constants.push_back(ALLOC_STRING("Hello"))`
+    - Rewrite the code (program instructions, that is a fixed array now)
+        `code = {OP_CONST, 0, OP_HALT}`
+    - Update the eva-vm.cpp main function to log the result of the
+        execution as string using the AS_CPPSTRING accessor
+
+3. Modify the exec method to test string concatenation
+    ```c++
+    constants.push_back(ALLOC_STRING("Hello, ");
+    constants.push_back(ALLOC_STRING("world!");
+
+    // Eva: (+ "Hello, " "world!") -> "Hello, world!"
+    code = {OP_CONST, 0, OP_CONST, 1, OP_ADD, OP_HALT}
+    ```
+
+4. Update OP_ADD to consider STRINGS (currently works only for NUMBERS)
+    - Instead of using BINARY_OP, get op2 and op1 directly in the eval
+        method and check if both operands are NUMBERs (IS_NUMBER).
+
+        If true, cast both op1 and op2 as number (AS_NUMBER) and
+        execute the addition and push the result as NUMBER EvaValue
+        type (just the way already is)
+
+        Also check is both operands are strings (else if).
+        If true, cast the operands as STRING (AS_STRING) and perform
+        the string concat using the same + C++ operand, then
+        push the result on the stack as STRING:
+        ```c++
+        push(ALLOC_STRING(s1 + s1));
+        ```
+
+        ALLOC_STRING returns a EvaValue, but allocates an Object on the
+        Heap (that is the Object* object; under the union).
+
+        Since the EvaValue will be storing the REFERENCE to the object
+        and not the object itself (as happens with NUMBER), once this
+        value is popped from the stack, the value will still exist
+        on the heap. THIS IS A MEMORY LEAK.
+
+        Later in the course this will be fixed (gargabe collection 
+        section).
+
+5. Introduce this 2 testers IS_NUMBER and IS_STRING at EvaValue.h
+    ```c++
+    #define IS_NUMBER(evaValue) ((evaValue).type == EvaValueType::NUMBER)
+    #define IS_OBJECT(evaValue) ((evaValue).type == EvaValueType::OBJECT)
+
+    #define IS_OBJECT_TYPE(evaValue, objectType) \
+        (IS_OBJECT(evaValue) && AS_OBJECT(evaValue)->type == objectType)
+
+    #define IS_STRING(evaValue) \
+        (IS_OBJECT_TYPE(evaValue, OjectType::STRING))
+
+6. Introduce the AS_OBJECT accessor
+    ```c++
+    #define AS_OBJECT(evaValue) ((Object*)(evaValue).object)
+    ```
+
+Now with objects, it's also possible to implement other values, such
+as functions, closures cells etc.
+
+
+Steps to reproduce:
+1. Introduce "generic object pointer type" and OBJECT EvaValueType
+2. Modify the EvaVM.h exec method to test the STRING constant type
+3. Modify the exec method to test string concatenation
+4. Update OP_ADD to consider STRINGS (currently works only for NUMBERS)
+5. Introduce this 2 testers IS_NUMBER and IS_STRING at EvaValue.h
+6. Introduce the AS_OBJECT accessor
+
+
 
 
 
