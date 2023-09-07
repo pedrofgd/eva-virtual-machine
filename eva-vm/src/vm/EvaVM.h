@@ -6,6 +6,7 @@
 #define EvaVM_h
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 #include <array>
@@ -13,7 +14,10 @@
 
 #include "../Logger.h"
 #include "../bytecode/OpCode.h"
+#include "../parser/EvaParser.h"
 #include "EvaValue.h"
+
+using syntax::EvaParser;
 
 /**
  * Reads the current byte in the bytecode
@@ -46,7 +50,7 @@
 */
 class EvaVM {
  public:
-     EvaVM() {}
+     EvaVM() : parser(std::make_unique<EvaParser>()) {}
 
      /**
       * Pushes a value to the top of the stack.
@@ -77,7 +81,7 @@ class EvaVM {
       */
      EvaValue exec(const std::string &program) {
          // 1. Parse the program into AST
-         // auto ast = parser->parse(program)
+         auto ast = parser->parse(program);
 
          // 2. Compile program to Eva bytecode
          // code = compiler->compile(ast)
@@ -159,6 +163,10 @@ class EvaVM {
          }
      }
 
+    /**
+     * Parser.
+     */
+     std::unique_ptr<EvaParser> parser;
 
      /**
       * Instruction pointer (aka Program counter).

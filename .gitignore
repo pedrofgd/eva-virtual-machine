@@ -14,5 +14,5 @@
 # Unignore all dirs
 !*/
 
-# Debug files
+### Debug files ###
 *.dSYM/

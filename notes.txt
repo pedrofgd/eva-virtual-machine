@@ -645,6 +645,54 @@ Steps to reproduce:
 
 
 
+Lecutre 7: Syntax | Parser implementation
+
+Since the focus of the course is not parsing, we will use automated
+parser built by the syntax tool, same as used in the previous course:
+
+```bash
+npm install -g syntax-cli
+```
+
+"syntax is the language agnostic parser generator, which means we can
+write the grammar once and and then generate automatically parsers for
+many target languages"
+
+Assignment:
+- [ ] Include double numbers (`3.14`) in the syntax grammar (`/src/parser/EvaGrammar.bnf` (currently it supports only integers)
+
+
+Steps:
+0. Make sure syntax-cli is installed
+1. Create the `parser` directory and EvaGrammar.bnf inside it and declare the
+    grammar (since is not the course focus, there is a lot a things I
+    don't fully understand about this file yet)
+2. Generate the EvaParser.h file (command is commented in the EvaGrammar file)
+    - Make sure everything is corret on the .bnf file (i had some errors on
+        the EvaParser.h for not having `;`, for example)
+3. Modify the EvaVM.h to use the parser
+    - Import the EvaParser header and use the syntax::EvaParser namespace
+    - Create a parser property as a unique_ptr
+    - Initialize the parser in EvaVM constructor:
+        ```c++
+        EvaVM() : parser(std::make_unique<EvaParser>()) {} 
+        ```
+    - Update `exec` method to use the parser:
+        ```c++
+        // Note: we receive the "read only" reference to the program string
+        EvaValue exec(const std::string& program) {
+            auto ast = parser->parse(program);
+
+            ...
+        }
+        ```
+4. Make some tests with debugging
+    - `lldb ./eva-vm`
+    - `b exec` (set a break in exec method)
+    - `r` start running
+    - `n` move next
+    - `p program` and `p ast` to peak its values during debug process
+
 
 
 
