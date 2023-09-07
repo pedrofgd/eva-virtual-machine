@@ -8,17 +8,17 @@
 #include "src/vm/EvaVM.h"
 
 int main(int argc, char const *argv[]) {
-    EvaVM vm;
+  EvaVM vm;
 
-    auto result = vm.exec(R"(
+  auto result = vm.exec(R"(
 
-        (+ "Hello, " "world!")
+    "Hello"
 
     )");
 
-    log(AS_CPPSTRING(result));
+  log(AS_CPPSTRING(result));
 
-    std::cout << "All done!\n";
+  std::cout << "All done!\n";
 
-    return 0;
+  return 0;
 }
