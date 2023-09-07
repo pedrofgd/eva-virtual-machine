@@ -344,8 +344,8 @@ Lecture 4: Numbers | Introduction to Stack
         }
         ```
         - "virtual machines usually represent values as typed-values"
-        - [ ] Take a look on `union`, but it seems that, when define
-            another values, like `bool boolean`, i "assign" on of them
+        - [x] Take a look on `union`, but it seems that, when define
+            another values, like `bool boolean`, i "assign" one of them
             and it ocupates the same size, diff from like a struct,
             that have multiple fields
 
@@ -364,11 +364,17 @@ Lecture 4: Numbers | Introduction to Stack
     - get the value from the constant pool and push to the stack
     - note that the index of the value in the constant pool will be
         the next instruction in the code (we can use READ_BYTE macro)
-    - may create a macro for GET_CONST(index)
+    - may create a macro for GET_CONST()
         - racap: this macro is a text substitution in compile time
         ```c++
         #define GET_CONST() constants[READ_BYTE()]
         ```
+        note: `READ_BYTE()` will return the VALUE pointed the the
+        instruction pointer (ip) (then it will move the ip for the
+        next position). So in a instruction like that: OP_CONST 0,
+        READ_BYTE() would return the index of the constant.
+        That's why we use `constants[]`, cause we ACCESS THE INDEX
+        OF THE CONSTANT (and this is how our bytecode works)
 
 6. Declare the stack and the stack pointer
     - The stack has a fixed size (use an array, instead of vector)
@@ -380,7 +386,7 @@ Lecture 4: Numbers | Introduction to Stack
 
 
 7. Create push operation, to push a value in the top of the stack
-    - Needs to check if its possible to push on the stack (if its\
+    - Needs to check if its possible to push on the stack (if it's
         full, that's a Stack Overflow error)
 
 8. Create pop operator, to remove the top element of the stack
@@ -393,17 +399,30 @@ Lecture 4: Numbers | Introduction to Stack
         because we have a pre-allocated array, so the size will
         never be 0.
 
+        *** note: push increments the stack pointer, so:
+        // push(NUMBER(100));
+        100
+            <- sp (not pointing to 100, but the next position, that
+                   would be empty)
+        so, pop needs first to decrease the stack pointer to
+        finally return the value. A `pop()` in this example would
+        return `100` (cause it's where the stack pointer is pointing to)
+
+        that's also why we need to check for the empty stack.
+
 9. Return EvaValue from eval and exec functions
 
 10. Update the check for OP_HALT (end of bytecode instructions),
     to pop() the stack and return
     ```c++
     // Return the value on top of stack (since is stack-base VM,
-    // the result is always let on top) and clean it
+    // the result is always let on top) and ****clean it
     return pop();
     ```
 11. Create accessor macro AS_NUMBER to return the EvaValue as
-    C++ implementation `(double)(evaValue).number)`
+    C++ implementation `((double)(evaValue).number)`
+
+12. Update the main function at `eva-vm.cpp` to log the EvaValue response
 
 
 
