@@ -269,6 +269,58 @@ union S
 Ref: https://en.cppreference.com/w/cpp/language/union
 
 
+Lecture 5: Math binary operations
+
+NOTE: debugger:
+``` bash
+lldb ./eva-vm
+```
+
+(b -> break)
+"break in the eval function": `b eval`
+
+(r -> run)
+just press `r` to start running and
+`n` to go step by step
+
+(p -> peak)
+"we can instrospect what is in the top of the stack": `p stack[0]`
 
 
+About macros with multiple lines (like the BINARY_OP we created here):
+```c++
+#define BINARY_OP(op)                \
+    do {                             \
+        auto op2 = AS_NUMBER(pop()); \
+        auto op1 = AS_NUMBER(pop()); \
+        push(NUMBER(op1 op op2));    \
+    } while (false)
+```
+
+- `#define BINARY_OP(op)` defines a macro named "BINARY_OP" with a
+    parameter "op", that will be replaced when the macro is used
+- `\` the backlash indicates that the macro continues on the next line
+- `do { ... } while (false)` is used to create a block of code.
+    This is common idiom used to ENSURE THAT THE MACRO BEHAVE LIKE A
+    SINGLE STATEMENT and can be used in control structures (e.g. if-else)
+    without issues
+
+    `do {...} while (false)` creates a loop condition that is always
+    false, so the loop body is executed once and then exists immediately
+    ```c++
+    int main() {
+        do {
+            // This really executes only once
+            std::cout << "Loop body" << std::endl;
+        } while (false);
+    }
+
+    /** 
+      * Output:
+
+        Loop body
+        Normal program termination. Exit status: 0
+        
+      */
+    ```
 

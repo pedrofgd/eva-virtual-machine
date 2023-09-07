@@ -426,6 +426,86 @@ Lecture 4: Numbers | Introduction to Stack
 
 
 
+Lecture 5: Math binary operations
+
+Implementation of the mathematical operations.
+
+1. Include the new "operation codes" in OpCode.h
+    - Add instruction: OP_ADD
+
+2. Uptade the eval method to handle OP_ADD operation code
+    - Expects 2 operands in the top of the stack
+    - Pop first 2 operands in top of the stack, perform the addition
+      and push the result back to the stack
+
+      To perform the addition, we need to have doubles instead of
+      EvaValues, so we can simply use the AS_NUMBER accessor we created
+      on previous lecture.
+
+    - Note: remember (by now) manually push back the values in the
+      constant pool and modify the `code` at `exec` function
+
+3. Define all other math operations (OpCode.h):
+    - Subtraction: OP_SUB
+    - Multiplaction: OP_MULT
+    - Division: OP_DIV
+    ** Note: Don't forget to modify the value of each macro
+       (sequentially increase the hex value)
+
+4. Create BINARY_OP macro, that will perform the same as addition
+    - This way, we can reuse the same implementation of a base binary
+      operation for all operands:
+      *** Multiple line macros: `\ do {} while (false)`
+      ```c++
+      #define BINARY_OP(op) \
+        do { \
+            auto op2 = AS_NUMBER(pop()); \
+            auto op1 = AS_NUMBER(pop()); \
+            push(NUMBER(op1 op op2)); \
+        } while (false)
+      ```
+
+      **** NOTE: we retrieve the operands in order to execute then
+      "first in, last output", op2 will be the last defined, so we can
+      perform:
+      ```
+      constants.push_back(10);
+      constnats.push_back(3);
+
+      // OP_SUB
+      op2 = 3
+      op1 = 10
+      op1 - op2 = 7
+      ```
+      instead of:
+      ```
+      // OP_SUB
+      op1 = 3
+      op2 = 10
+      op1 - op2 = -7
+      ```
+
+5. Handle all other operations in eval function
+
+6. Make some tests
+
+NOTE: debugger:
+``` bash
+lldb ./eva-vm
+```
+
+(b -> break)
+"break in the eval function": `b eval`
+
+(r -> run)
+just press `r` to start running and
+`n` to go step by step
+
+(p -> peak)
+"we can instrospect what is in the top of the stack": `p stack[0]`
+
+
+
 
 
 

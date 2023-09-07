@@ -31,6 +31,16 @@
 #define STACK_LIMIT 512
 
 /**
+ * Binary operation.
+ */
+#define BINARY_OP(op) \
+    do { \
+        auto op2 = AS_NUMBER(pop()); \
+        auto op1 = AS_NUMBER(pop()); \
+        push(NUMBER(op1 op op2)); \
+    } while (false)
+
+/**
 * Eva Virtual Machine
 */
 class EvaVM {
@@ -71,14 +81,17 @@ class EvaVM {
          // 2. Compile program to Eva bytecode
          // code = compiler->compile(ast)
          
-         constants.push_back(NUMBER(100));
+         constants.push_back(NUMBER(10));
+         constants.push_back(NUMBER(3));
+         constants.push_back(NUMBER(10));
+         constants.push_back(NUMBER(2));
 
-         code = {OP_CONST, 0, OP_HALT};
+         code = {OP_CONST, 0, OP_CONST, 1, OP_MUL, OP_CONST, 2, OP_SUB, OP_CONST, 3, OP_DIV, OP_HALT};
 
          // Set instruction pointer to the beginning:
          ip = &code[0];
 
-         // Set instruction pointer to the beginning:
+         // Init the stack.
          sp = &stack[0];
 
          return eval();
@@ -93,9 +106,37 @@ class EvaVM {
              switch (opcode) {
                  case OP_HALT:
                      return pop();
+
+                 // -------------------------
+                 // Constants:
+
                  case OP_CONST:
                      push(GET_CONST());
                      break;
+
+                 // -------------------------
+                 // Math ops:
+
+                 case OP_ADD: {
+                     BINARY_OP(+);
+                     break;
+                 }
+
+                 case OP_SUB: {
+                     BINARY_OP(-);
+                     break;
+                 }
+                 
+                 case OP_MUL: {
+                     BINARY_OP(*);
+                     break;
+                 }
+
+                 case OP_DIV: {
+                     BINARY_OP(/);
+                     break;
+                 }
+
                  default:
                      // TODO: i've tried use int(opcode) cause the value
                      // wasn't being printed at the console (just empty)
