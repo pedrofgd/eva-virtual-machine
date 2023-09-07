@@ -6,6 +6,28 @@
 #include "../parser/EvaParser.h"
 #include "../vm/EvaValue.h"
 
+// Allocates new constant in the pool
+#define ALLOC_CONST(tester, converter, allocator, value) \
+  do {                                                   \
+    for (int i = 0; i < co->constants.size(); i++) {     \
+      if (!tester(co->constants[i])) {                   \
+        continue;                                        \
+      }                                                  \
+      if (converter(co->constants[i]) == value) {        \
+        return i;                                        \
+      }                                                  \
+    }                                                    \
+    co->constants.push_back(allocator(value));           \
+  } while (false)
+
+// Generic binary operator: (+ 1 2) OP_CONST, OP_CONST, OP_ADD
+#define GEN_BINARY_OP(op) \
+  do {                    \
+    gen(exp.list[1]);     \
+    gen(exp.list[2]);     \
+    emit(op);             \
+  } while (false)
+
 /*
  * Compiler class, emits bytecode, records contant pool, vars etc.
  */
@@ -49,7 +71,30 @@ class EvaCompiler {
         break;
 
       case ExpType::LIST:
-        DIE << "ExpType::SYMBOL: unimplemented.";
+        auto tag = exp.list[0];
+
+        if (tag.type == ExpType::SYMBOL) {
+          auto op = tag.string;
+
+          // -------------------------------
+          // Binary math operators:
+
+          if (op == "+") {
+            GEN_BINARY_OP(OP_ADD);
+          }
+
+          else if (op == "-") {
+            GEN_BINARY_OP(OP_SUB);
+          }
+
+          else if (op == "*") {
+            GEN_BINARY_OP(OP_MUL);
+          }
+
+          else if (op == "/") {
+            GEN_BINARY_OP(OP_DIV);
+          }
+        }
         break;
     }
   }
@@ -59,15 +104,7 @@ class EvaCompiler {
    * Allocates a numeric constant.
    */
   size_t numericConstIdx(double value) {
-    for (int i = 0; i < co->constants.size(); i++) {
-      if (!IS_NUMBER(co->constants[i])) {
-        continue;
-      }
-      if (AS_NUMBER(co->constants[i]) == value) {
-        return i;
-      }
-    }
-    co->constants.push_back(NUMBER(value));
+    ALLOC_CONST(IS_NUMBER, AS_NUMBER, NUMBER, value);
     return co->constants.size() - 1;
   }
 
@@ -75,15 +112,7 @@ class EvaCompiler {
    * Allocates a string constant
    */
   size_t stringConstIdx(const std::string& value) {
-    for (auto i = 0; i < co->constants.size(); i++) {
-      if (!IS_STRING(co->constants[i])) {
-        continue;
-      }
-      if (AS_CPPSTRING(co->constants[i]) == value) {
-        return i;
-      }
-    }
-    co->constants.push_back(ALLOC_STRING(value));
+    ALLOC_CONST(IS_STRING, AS_CPPSTRING, ALLOC_STRING, value);
     return co->constants.size() - 1;
   }
 

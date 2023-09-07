@@ -787,5 +787,10 @@ NUMBER or STRING values) we:
 
 
 
+Lecture 9: Complex expressions
+
+Now we will handle LISTS such as `(+ 1 (+ 40 1))`
+
+
 
 

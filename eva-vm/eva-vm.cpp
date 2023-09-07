@@ -12,11 +12,12 @@ int main(int argc, char const *argv[]) {
 
   auto result = vm.exec(R"(
 
-    "Hello"
+    // (+ "hello" " world")
+    (* 2 (+ 10 2))
 
     )");
 
-  log(AS_CPPSTRING(result));
+  log(result);
 
   std::cout << "All done!\n";
 

@@ -480,7 +480,10 @@ Lecture 8: Compiler | Bytecode
 
 
 
+Lecture 9: Complex expressions
 
+- [ ] Review this lecture to understand how the `log(result)` is working
+    after the refactoring made at `EvaValue.h`
 
 
 
